@@ -47,6 +47,14 @@ logic, so no client update is needed to pick them up.
 
 ### Changed
 
+- The publish-tarball check moved into `scripts/verify-tarball.mjs`, called by CI,
+  the release workflow and the monorepo's assembly script alike. It had been
+  inlined in all three, which is how they came to disagree: the release workflow
+  installs `npm@latest`, and **npm 12 changed `npm pack --json` from an array to
+  an object keyed by package name** — so the check died there with an unrelated
+  `TypeError` while CI stayed green on the runner's npm 11. It now accepts both
+  shapes, says so plainly when it recognises neither, and CI runs it a second
+  time under `npm@latest` so the next such change is caught before a release.
 - The connector now lives in its own repository,
   [`usewrit/writ-mcp`](https://github.com/usewrit/writ-mcp), and is released from
   there. `repository`, `bugs` and `homepage` point at it. It continues to ship
