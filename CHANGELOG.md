@@ -5,7 +5,16 @@ All notable changes to `writ-mcp` are documented here. This project follows
 
 ## [Unreleased]
 
-### Fixed
+## [1.0.0] — 2026-07-27
+
+First public release on npm.
+
+Development of this connector predates the release: it shipped bundled inside
+self-host installs before it was ever published to the registry. The entries
+below therefore cover everything in 1.0.0, including fixes made to code that was
+only ever distributed that way. Nothing was published under an earlier version.
+
+### Fixed — credential handling and hangs
 
 - **A request the server never addressed left the client hanging forever.** The
   connector relayed whatever came back and stopped there, so a response carrying
@@ -34,7 +43,7 @@ All notable changes to `writ-mcp` are documented here. This project follows
 - Documentation used a `wk_` API-key prefix that no Writ surface has ever issued;
   real keys are `wt_`.
 
-### Added
+### Added — relayed server capabilities
 
 - Workflow tools now accept an optional `max_age` (seconds) so an agent can reuse a
   recent result instead of re-driving the browser. Omitted or `0` still always runs
@@ -60,11 +69,7 @@ logic, so no client update is needed to pick them up.
   there. `repository`, `bugs` and `homepage` point at it. It continues to ship
   bundled inside a self-host install at `connectors/writ-mcp`.
 
-## [1.0.0] — 2026-07-25
-
-First public release on npm.
-
-### Added
+### Added — the connector itself
 
 - stdio ↔ Streamable-HTTP bridge for Writ Cloud, self-hosted coordinators, and
   published per-workflow `/mcp/<slug>` endpoints. Zero runtime dependencies.
@@ -82,7 +87,7 @@ First public release on npm.
 - Test suite (`npm test`, `node:test`, no dev dependencies) driving the real
   binary over stdio against a mock server.
 
-### Fixed
+### Fixed — protocol correctness
 
 - **JSON-RPC batches were silently dropped.** A batch is an array, and an array's
   `.id` is `undefined`, so batches were misread as notifications and their
