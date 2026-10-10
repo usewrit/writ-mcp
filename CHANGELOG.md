@@ -5,6 +5,20 @@ All notable changes to `writ-mcp` are documented here. This project follows
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-10-10
+
+### Added
+- **`mcpName` for the MCP registry.** `package.json` now carries
+  `"mcpName": "app.usewrit/writ-cloud"`, the name the official MCP registry
+  checks before it lists this package as the stdio way to reach Writ Cloud.
+
+### Changed
+- **The README tool table matches the current servers.** It lists the 39 Writ Cloud
+  tools and marks which ones a self-hosted coordinator also serves. It no longer
+  claims a `writ_build` tool, which neither target has.
+
+_No bridge code changed: the bridge holds no tool definitions._
+
 ## [1.1.0] — 2026-08-14
 
 ### Added

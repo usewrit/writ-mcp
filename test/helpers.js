@@ -77,15 +77,27 @@ function startServer(handler) {
  *   opts.send      array of values written to stdin as JSON lines (strings are
  *                  written verbatim, so malformed input can be tested)
  *   opts.expect    resolve as soon as this many stdout lines have arrived
- *   opts.timeoutMs overall cap (default 5000)
+ *   opts.timeoutMs overall cap (default 20000, or $WRIT_TEST_TIMEOUT_MS)
  * Resolves to { out, err, lines, code }.
+ *
+ * TIMING. Every case here spawns a real `node` process and, usually, an HTTP
+ * server beside it. The cap used to be 5s and a timeout resolved SILENTLY with
+ * whatever had arrived — so on a loaded machine a test failed as
+ * `Cannot read properties of undefined (reading 'id')` on line 0 of an empty
+ * array, which says nothing about the cause. Six different cases failed that way
+ * on one run and none on the next, and the publish script runs this suite as a
+ * release guard, so the flake blocked publishing at random.
+ *
+ * Now: the cap is generous (a real hang is still caught, just later), and a
+ * timeout that did not produce the expected output REJECTS with what was
+ * actually seen, including the connector's stderr.
  */
 function runConnector(opts) {
   const o = opts || {};
-  const timeoutMs = o.timeoutMs || 5000;
+  const timeoutMs = o.timeoutMs || Number(process.env.WRIT_TEST_TIMEOUT_MS || 20000);
   const expect = o.expect === undefined ? 0 : o.expect;
 
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const child = spawn(process.execPath, [BIN].concat(o.args || []), {
       env: Object.assign({}, process.env, { WRIT_API_KEY: '' }, o.env || {}),
       stdio: ['pipe', 'pipe', 'pipe'],
@@ -94,6 +106,7 @@ function runConnector(opts) {
     let out = '';
     let err = '';
     let settled = false;
+    let timedOut = false;
     const lines = () => out.split('\n').filter(Boolean).map((l) => JSON.parse(l));
 
     const finish = () => {
@@ -102,13 +115,21 @@ function runConnector(opts) {
       clearTimeout(timer);
       try { child.stdin.end(); } catch (_) { /* already closed */ }
       // Give the process a moment to exit cleanly, then report.
-      const done = () => resolve({ out, err, lines: lines(), code: child.exitCode });
+      const done = () => {
+        const got = out.split('\n').filter(Boolean).length;
+        if (timedOut && expect > 0 && got < expect) {
+          return reject(new Error(
+            'the connector produced ' + got + ' of ' + expect + ' expected stdout line(s) ' +
+            'within ' + timeoutMs + 'ms.\n--- stdout ---\n' + out + '\n--- stderr ---\n' + err));
+        }
+        resolve({ out, err, lines: lines(), code: child.exitCode });
+      };
       if (child.exitCode !== null) return done();
       child.once('exit', done);
       setTimeout(() => { try { child.kill(); } catch (_) {} done(); }, 400);
     };
 
-    const timer = setTimeout(finish, timeoutMs);
+    const timer = setTimeout(() => { timedOut = true; finish(); }, timeoutMs);
 
     const queue = (o.send || []).slice();
     const write = (m) => child.stdin.write(typeof m === 'string' ? m : JSON.stringify(m) + '\n');

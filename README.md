@@ -130,25 +130,48 @@ node /path/to/writ/connectors/writ-mcp/index.js --url https://writ.example.com
 
 ## Tools you get
 
-Served by the coordinator, not by this package:
+Served by the server you connect to, not by this package, so a new server tool reaches
+you without a connector update. Writ Cloud lists the 39 tools below; a self-hosted
+coordinator lists the ones marked in its column.
 
-| Tool | What it does |
-|---|---|
-| `writ_list_workflows` | Your saved workflows — plus a `run_<name>` tool per workflow |
-| `writ_run_workflow` | Run one and wait for the extracted data |
-| `writ_workflow_data` | Read a workflow's accumulated data table |
-| `writ_search_data` | Search across everything already collected |
-| `writ_export_data` | Export a workflow's data as CSV/JSON |
-| `writ_workflow_runs` | Run history and status |
-| `writ_set_schedule` | Schedule a workflow (interval / daily / weekly) |
-| `writ_expose_workflow_api` | Publish a workflow as a callable REST endpoint |
-| `writ_crawl_site` / `writ_crawl_status` | Start and poll a distributed site crawl |
-| `writ_create_automation` | Event → run-workflow / notify chains |
-| `writ_create_monitor` / `writ_wire_monitor` | Watch a page and react to changes |
+| Tool | What it does | Writ Cloud | Self-hosted |
+|---|---|---|---|
+| `writ_list_workflows` | Your saved workflows (a `run_<name>` tool is added only for workflows you pin) | yes | yes |
+| `writ_run_workflow` | Run one and wait for the extracted data | yes | yes |
+| `writ_pin_workflow_tool` | Pin or unpin a workflow as its own `run_<name>` tool — off by default, capped; everything still runs via `writ_run_workflow` | yes | yes |
+| `writ_update_workflow` | Read a workflow's outline or edit it in place (settings, steps, functions, its agent skill) | yes | yes |
+| `writ_diagnose_http_workflow` | Show what every request of a run was answered with, and whether it ran without a browser | yes | no |
+| `writ_create_http_extraction` | Author a multi-request browserless extraction from captured requests | yes | no |
+| `writ_workflow_data` | Read a workflow's accumulated data table | yes | yes |
+| `writ_search_data` | Search across everything already collected | yes | yes |
+| `writ_export_data` | Export a workflow's data as CSV/JSON | yes | yes |
+| `writ_workflow_runs` | Run history and status | yes | yes |
+| `writ_set_schedule` | Schedule a workflow (interval / daily / weekly) | yes | yes |
+| `writ_expose_workflow_api` | Publish a workflow as a callable REST endpoint | yes | yes |
+| `writ_scrape` | Read a page, or several, as clean markdown (Cloud also reads a listing's top N) | yes | yes |
+| `writ_crawl_site` / `writ_crawl_status` | Start and poll a distributed site crawl | yes | yes |
+| `writ_crawl_files` | The original documents a crawl captured (PDFs, office files, images) | yes | no |
+| `writ_saved_crawls` / `writ_run_saved_crawl` / `writ_saved_crawl_data` | Saved crawls (see below) | yes | yes |
+| `writ_update_saved_crawl` | Inspect or change a saved crawl's settings | yes | no |
+| `writ_personas` | See your saved sign-in identities and get them ready (see below) | yes | yes |
+| `writ_payment` | Pay with a card the user approves; Writ places the order once they confirm | yes | no |
+| `writ_devices` | Your linked Writ desktops: list them, or point this connection at one | yes | no |
+| `writ_create_automation` | Event or clock → run a workflow, notify, or wake an agent | yes | yes |
+| `writ_list_webhooks` | Your inbound webhook URLs and the automations they fire | yes | yes |
+| `writ_create_monitor` / `writ_wire_monitor` | Watch a page and react to changes | yes | yes |
+| `writ_browser_use` | Open a real browser your assistant drives turn by turn | yes | yes |
+| `writ_record_website` | Record a repeatable task as a workflow | yes | yes |
+| `writ_website_to_api` | Turn a website into a callable API | yes | yes |
+| `writ_discovery_status` | Follow an API build to its result | yes | no |
+| `writ_browser_act` / `_context` / `_network` / `_save` / `_cancel` | Act in the browser, read the page and its network calls, save or close the session | yes | yes |
+| `writ_browser_compose` | Define named functions, inputs and explicit steps in a session | yes | no |
+| `writ_browser_ask_user` | Hand a CAPTCHA, a code or a decision to the user in the live browser | yes | no |
+| `writ_browser_sessions` | Open browser sessions you can resume | yes | no |
+| `writ_record_start` / `_act` / `_context` / `_network` / `_save` / `_cancel` | Older names of the browser loop, kept for compatibility | no | yes |
 
-Every target additionally exposes a **build** family — `writ_browser_use`,
-`writ_record_website`, `writ_build`, `writ_website_to_api`, then
-`writ_browser_act` / `_context` / `_network` / `_save` / `_cancel`. Your
+The build tools (`writ_browser_use`, `writ_record_website`, `writ_website_to_api`, then
+`writ_browser_act` / `_context` / `_network` / `_save` / `_cancel`) are on both targets;
+neither has a `writ_build` tool, so use `writ_record_website`. Your
 assistant opens a real browser, drives it turn by turn, and saves the session as
 a reusable workflow that afterwards replays with no model in the loop. Writ Cloud
 runs it on Writ's fleet; a self-hosted coordinator runs it on your own [fleet
@@ -172,7 +195,7 @@ A reused answer carries `_cache: {hit: true, age_seconds: N}` so the assistant c
 tell how current it is.
 
 `max_age` works identically against Writ Cloud and a self-hosted coordinator, and on
-a workflow's own generated tool as well as `writ_run_workflow`.
+a pinned workflow's own `run_<name>` tool as well as `writ_run_workflow`.
 
 ### Calling a saved crawl (`writ_run_saved_crawl`)
 
@@ -202,6 +225,22 @@ runs them, so the crawl becomes callable by REST as well. Re-using the same `sav
 updates that saved crawl instead of piling up duplicates. Saving needs an
 `admin`-scoped credential (it creates reusable, callable configuration); running one
 needs only `run`.
+
+### Sites behind a login (`writ_personas`)
+
+A **persona** is a saved sign-in identity — username, credentials sealed
+server-side, optional 2FA, and a warm signed-in session. `writ_personas` lists
+yours (with per-persona readiness), inspects one (`get`), refreshes its session
+by running its login workflow (`sign_in`), or has the AI record the sign-in flow
+once so the persona can sign itself in from then on (`record_login`). The
+assistant then passes a `persona_id` to `writ_run_workflow` (and each pinned
+`run_<name>` tool), `writ_crawl_site`, or `writ_scrape` — plus `writ_browser_use`
+on Writ Cloud — and the task runs signed in, with 2FA codes minted server-side.
+
+By design the connector can only **use** personas, never manage them: creating,
+editing or deleting one involves credentials, and no credential or one-time code
+ever crosses the MCP connection in either direction. Personas are created in the
+Writ dashboard.
 
 ### If a tool call times out
 
@@ -273,7 +312,8 @@ npm audit signatures
 | `Cannot reach …` | Wrong `--url`, or the target is down. For a self-signed cert see the local-CA note above. |
 | `… redirected (HTTP 301)` | Your reverse proxy redirects (usually `http` → `https`). Point `--url` at the final URL. |
 | `The API key contains characters that cannot be sent in an HTTP header` | A newline or control character got into the key — usually a copy-paste artifact. Re-copy it. |
-| **No tools listed** | You have no saved workflows yet, or the key can't read them. The static `writ_*` tools appear regardless. |
+| **No tools listed** | The connector could not reach the coordinator, or the key was rejected — see the rows above. With a working connection the static `writ_*` tools are always listed, even before you save a workflow. |
+| **A workflow has no `run_<name>` tool** | Derived tools are opt-in and off by default. Pin the workflow with `writ_pin_workflow_tool` (or the app's **Expose as MCP tool** switch) and it appears on the next `tools/list`, up to 20 per account. Every workflow runs through `writ_run_workflow` either way. |
 | **Client won't connect, no error** | Read the connector's stderr — your client logs it. Claude Code: `~/Library/Caches/claude-cli-nodejs/<project>/mcp-logs-<name>/`. |
 
 ## Status
