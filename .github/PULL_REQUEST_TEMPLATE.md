@@ -19,7 +19,6 @@
 <!-- Delete what does not apply. A real target is worth more than the mock. -->
 
 - [ ] The mock server in `test/`
-- [ ] A self-hosted coordinator
 - [ ] Writ Cloud
 - [ ] A published `/mcp/<slug>` endpoint
 

@@ -28,14 +28,14 @@ behaviour *is* the contract. It runs in about six seconds.
 
 `npm publish` runs the suite automatically via `prepublishOnly`.
 
-### Testing against a real Writ instance
+### Testing against Writ Cloud
 
-The mock server proves protocol behaviour; a real coordinator proves the whole
-thing works. Start a [self-host coordinator](https://github.com/usewrit/writ),
-create an API key under **Settings → Developers → API keys**, then:
+The mock server proves protocol behaviour; Writ Cloud proves the whole thing
+works. Sign in at [usewrit.app](https://usewrit.app), create an API key under
+**Developers → API Keys**, then:
 
 ```bash
-claude mcp add writ-dev -e WRIT_API_KEY=<YOUR_API_KEY> -- node ./index.js --url http://localhost:8000
+claude mcp add writ-dev -e WRIT_API_KEY=<YOUR_API_KEY> -- node ./index.js
 ```
 
 `claude mcp list` will tell you whether it connected.
@@ -57,8 +57,8 @@ If you need a helper, write it in `index.js`.
 The connector is a transparent stdio↔HTTP proxy. Tools, schemas, validation and
 business rules all live server-side, so the connector can never drift from the
 app and an old install never has to be upgraded to see a new tool. If your change
-teaches the connector what a tool *means*, it belongs in
-[`usewrit/writ`](https://github.com/usewrit/writ) instead.
+teaches the connector what a tool *means*, it belongs on the server: describe it at
+[usewrit.app/contact](https://usewrit.app/contact/) instead.
 
 ## What a good pull request looks like
 
@@ -81,8 +81,7 @@ template. Include:
 - what MCP client, and what Node version (`node --version`);
 - the connector's **stderr**, which your client writes to a log file (Claude Code:
   `~/Library/Caches/claude-cli-nodejs/<project>/mcp-logs-<name>/`);
-- whether the target is Writ Cloud, a self-hosted coordinator, or a published
-  `/mcp/<slug>` endpoint.
+- whether the target is Writ Cloud or a published `/mcp/<slug>` endpoint.
 
 **Never paste an API key** into an issue. Redact it — the stderr banner already
 does.

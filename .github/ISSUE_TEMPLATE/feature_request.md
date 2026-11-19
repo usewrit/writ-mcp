@@ -10,8 +10,8 @@ Before filing — is this about a TOOL, or about the CONNECTOR?
 
 This package is a transparent stdio<->HTTP proxy. It holds no tool logic: every
 `writ_*` tool, its schema and its behaviour live server-side, so requests like
-"add a tool that does X" or "change what writ_run_workflow returns" belong in
-https://github.com/usewrit/writ instead — and land without anyone needing to
+"add a tool that does X" or "change what writ_run_workflow returns" go to
+https://usewrit.app/contact/ instead, and land without anyone needing to
 upgrade this connector.
 
 Things that DO belong here: transport behaviour, config and flags, error

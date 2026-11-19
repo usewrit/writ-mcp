@@ -43,5 +43,5 @@ Your MCP client writes the connector's stderr to a log file:
 - Node version (`node --version`):
 - MCP client and version:
 - OS:
-- Target: <!-- Writ Cloud / self-hosted coordinator / published /mcp/<slug> endpoint -->
+- Target: <!-- Writ Cloud / published /mcp/<slug> endpoint -->
 - Self-host coordinator version, if applicable:

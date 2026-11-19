@@ -1,12 +1,12 @@
 blank_issues_enabled: true
 contact_links:
-  - name: Tool behaviour, workflows, or the coordinator
-    url: https://github.com/usewrit/writ/issues
-    about: This connector holds no tool logic — anything about what a writ_* tool does, or about the coordinator itself, belongs in usewrit/writ.
+  - name: Tool behaviour, workflows, or your Writ account
+    url: https://usewrit.app/contact/
+    about: This connector holds no tool logic. Anything about what a writ_* tool does, or about Writ Cloud itself, goes to Writ support.
 
-  - name: The fleet agent (recording, replay, crawling)
+  - name: The open-source agent (your own machines)
     url: https://github.com/usewrit/writ-agent/issues
-    about: Browser-side behaviour lives in the Rust worker.
+    about: Issues with writ-agent, the program that connects your own computer or server to Writ.
 
   - name: Report a security vulnerability
     url: https://github.com/usewrit/writ-mcp/security/advisories/new

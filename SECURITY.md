@@ -21,9 +21,9 @@ What to expect:
   thread, and credit reporters in the published advisory unless you prefer
   otherwise.
 
-If the issue is in the **server** side — the tools themselves, the coordinator,
-or Writ Cloud — report it against [`usewrit/writ`](https://github.com/usewrit/writ/security/advisories/new)
-instead. This connector holds no tool logic.
+If the issue is on the **server** side (the tools themselves or Writ Cloud), email
+**security@usewrit.app** instead; the policy is at
+[usewrit.app/security](https://usewrit.app/security/). This connector holds no tool logic.
 
 ### Supported versions
 
