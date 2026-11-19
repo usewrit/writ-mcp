@@ -1,5 +1,8 @@
 <div align="center">
-  <img src="./assets/banner.svg" alt="writ-mcp — the official Writ MCP server connector" width="100%">
+  <a href="https://usewrit.app"><picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./assets/cover-dark.png">
+    <img src="./assets/cover-light.png" alt="writ-mcp: your Writ APIs, as tools your AI assistant can call. usewrit.app" width="100%">
+  </picture></a>
 
   <br/>
 
@@ -13,9 +16,11 @@
     <img src="https://img.shields.io/badge/PRs-welcome-16a34a?style=flat-square" alt="PRs welcome">
   </p>
 
-  <h3 align="center">Your saved browser workflows, as tools your assistant can call.</h3>
+  <h3 align="center">Your Writ APIs, as tools your AI assistant can call.</h3>
 
   <p align="center">
+    <a href="https://usewrit.app"><b>usewrit.app</b></a> ·
+    <a href="https://usewrit.app/docs/mcp/"><b>Docs</b></a> ·
     <a href="#quick-start"><b>Quick start</b></a> ·
     <a href="#tools-you-get"><b>Tools</b></a> ·
     <a href="#configuration"><b>Configuration</b></a> ·
@@ -27,48 +32,45 @@
 
 ---
 
-**writ-mcp** connects a stdio MCP client — Claude Code, Claude Desktop, Cursor,
-Windsurf, Codex — to [Writ](https://github.com/usewrit/writ), so the browser
-workflows you already recorded become tools your assistant can call: run them,
-read the data they collected, search past results, schedule them, expose them as
-REST endpoints, and kick off site crawls.
+**writ-mcp** is the open-source stdio bridge to the MCP server of [Writ](https://usewrit.app),
+the service that gives you your own API to any website. It connects Claude Code, Claude Desktop,
+Cursor, Windsurf, Codex or any stdio MCP client to **Writ Cloud** with a `wt_` API key, so your
+assistant can turn a website into an API, run the APIs and workflows you saved, read pages, crawl
+sites, watch pages for changes and schedule jobs.
 
-<div align="center">
-  <img src="./assets/connect.svg" alt="Terminal: claude mcp add writ-selfhost, then claude mcp list reporting Connected" width="100%">
-</div>
+It is a **transparent stdio↔HTTP proxy and nothing else**. Every tool, schema and rule lives
+server-side, so a new tool never requires upgrading this package. Zero dependencies, one file, Node
+core only.
 
-It is a **transparent stdio↔HTTP proxy and nothing else**. Every tool, schema and
-rule lives server-side, so what you get always matches what your instance can do —
-and a new tool never requires upgrading this package. Zero dependencies, one file,
-Node core only.
-
-> Clients that speak Streamable HTTP natively don't need this at all — point them
-> straight at the `/mcp` endpoint with an `Authorization: Bearer <key>` header.
+> **You may not need it.** A client that supports remote MCP servers connects to
+> `https://api.usewrit.app/mcp` directly and signs in with OAuth: no key, no package. See
+> [Connect an AI assistant](https://usewrit.app/docs/mcp/). Use writ-mcp when your client only runs
+> local commands, or when you prefer a fixed API key.
 
 ## Quick start
 
-**1. Get an API key.** In the Writ app: **Settings → Developers → API keys**. Keys
-look like `wt_…`.
+**1. Get an API key.** Sign in at [usewrit.app](https://usewrit.app), then open **Developers → API
+Keys**. A key starts with `wt_` and is shown once.
 
 **2. Add the server.**
 
-Against a self-hosted coordinator:
+Claude Code:
 
 ```bash
-claude mcp add writ-selfhost -e WRIT_API_KEY=<YOUR_API_KEY> -- npx -y writ-mcp --url https://writ.example.com
+claude mcp add writ-cloud -e WRIT_API_KEY=<YOUR_API_KEY> -- npx -y writ-mcp
 ```
 
-Against a coordinator on this machine:
+Codex:
 
 ```bash
-claude mcp add writ-selfhost -e WRIT_API_KEY=<YOUR_API_KEY> -- npx -y writ-mcp --url http://localhost:8000
+codex mcp add writ-cloud --env WRIT_API_KEY=<YOUR_API_KEY> -- npx -y writ-mcp
 ```
 
-Against a published per-workflow endpoint (an "Expose as MCP" slug URL is used
-verbatim — no path rewriting):
+A per-workflow MCP server (the URL a workflow's **Expose as MCP** gives you) is used verbatim, with
+no path rewriting:
 
 ```bash
-claude mcp add my-tools -e WRIT_API_KEY=<YOUR_API_KEY> -- npx -y writ-mcp --url https://mcp.example.com/mcp/my-tools
+claude mcp add my-tools -e WRIT_API_KEY=<YOUR_API_KEY> -- npx -y writ-mcp --url https://mcp.usewrit.app/mcp/your-org/top-stories
 ```
 
 **3. Check it.**
@@ -77,38 +79,24 @@ claude mcp add my-tools -e WRIT_API_KEY=<YOUR_API_KEY> -- npx -y writ-mcp --url 
 claude mcp list
 ```
 
-> **Writ Cloud is the default target** when you pass no `--url`
-> (`https://api.usewrit.app`). Pass `--url` to point the connector at your own
-> coordinator instead. See [Status](#status).
-
 > **Pass the key through the environment, not the command line.** `--api-key`
 > works, but it puts your key in the process's argument list where any local
 > process can read it via `ps`, and your shell records it in history. The
 > connector prints a note when you use it.
 
-Your running coordinator also hands out these one-liners, pre-filled, on its
-**Connect** page and at `GET /api/mcp/connect-info`:
+### Claude Desktop, Cursor, Windsurf (config file)
 
-<div align="center">
-  <img src="./assets/media/connect.png" alt="The Connect page of a self-hosted Writ coordinator, showing the writ-mcp one-liner and the tools it exposes" width="100%">
-</div>
-
-### Claude Desktop / Cursor (config file)
-
-Add to `claude_desktop_config.json` (Claude Desktop) or `~/.cursor/mcp.json`
-(Cursor). The `env` form is recommended — it keeps the key out of the argument
+Add to `claude_desktop_config.json` (Claude Desktop), `~/.cursor/mcp.json` (Cursor) or
+`~/.codeium/windsurf/mcp_config.json` (Windsurf). The `env` form keeps the key out of the argument
 list:
 
 ```json
 {
   "mcpServers": {
-    "writ-selfhost": {
+    "writ-cloud": {
       "command": "npx",
       "args": ["-y", "writ-mcp"],
-      "env": {
-        "WRIT_COORDINATOR_URL": "https://writ.example.com",
-        "WRIT_API_KEY": "<YOUR_API_KEY>"
-      }
+      "env": { "WRIT_API_KEY": "<YOUR_API_KEY>" }
     }
   }
 }
@@ -116,67 +104,67 @@ list:
 
 ### Without npm
 
-A self-host install bundles this connector at `connectors/writ-mcp`. There is no
-build step, so you can run it straight from disk:
+There is no build step, so you can run a checkout of this repository straight from disk:
 
 ```bash
-node /path/to/writ/connectors/writ-mcp/index.js --url https://writ.example.com
+WRIT_API_KEY=<YOUR_API_KEY> node /path/to/writ-mcp/index.js
 ```
 
-> **It coexists with the other Writ servers.** Each surface registers under its
-> own slug on purpose — the desktop app is `writ`, Writ Cloud is `writ-cloud`, a
-> self-hosted coordinator is `writ-selfhost` — and each identifies itself to the
-> assistant with a distinct title. Keep any combination connected at once.
+### Writ Desktop
+
+[Writ Desktop](https://usewrit.app/desktop/) runs the same kind of tools on your own computer, for
+free, and has its own local MCP server: open **MCP & APIs** in the app and use its one-click install.
+It does not need this package. To reach a linked Writ Desktop from Writ Cloud instead, use the
+`writ_devices` tool.
+
+> **It coexists with the other Writ servers.** Each surface registers under its own name on
+> purpose: Writ Desktop is `writ`, Writ Cloud is `writ-cloud`. Keep both connected at once.
 
 ## Tools you get
 
-Served by the server you connect to, not by this package, so a new server tool reaches
-you without a connector update. Writ Cloud lists the 39 tools below; a self-hosted
-coordinator lists the ones marked in its column.
+Served by Writ Cloud, not by this package, so a new tool reaches you without a connector update.
+The full reference is [MCP tools](https://usewrit.app/docs/mcp-tools/).
 
-| Tool | What it does | Writ Cloud | Self-hosted |
-|---|---|---|---|
-| `writ_list_workflows` | Your saved workflows (a `run_<name>` tool is added only for workflows you pin) | yes | yes |
-| `writ_run_workflow` | Run one and wait for the extracted data | yes | yes |
-| `writ_pin_workflow_tool` | Pin or unpin a workflow as its own `run_<name>` tool — off by default, capped; everything still runs via `writ_run_workflow` | yes | yes |
-| `writ_update_workflow` | Read a workflow's outline or edit it in place (settings, steps, functions, its agent skill) | yes | yes |
-| `writ_diagnose_http_workflow` | Show what every request of a run was answered with, and whether it ran without a browser | yes | no |
-| `writ_create_http_extraction` | Author a multi-request browserless extraction from captured requests | yes | no |
-| `writ_workflow_data` | Read a workflow's accumulated data table | yes | yes |
-| `writ_search_data` | Search across everything already collected | yes | yes |
-| `writ_export_data` | Export a workflow's data as CSV/JSON | yes | yes |
-| `writ_workflow_runs` | Run history and status | yes | yes |
-| `writ_set_schedule` | Schedule a workflow (interval / daily / weekly) | yes | yes |
-| `writ_expose_workflow_api` | Publish a workflow as a callable REST endpoint | yes | yes |
-| `writ_scrape` | Read a page, or several, as clean markdown (Cloud also reads a listing's top N) | yes | yes |
-| `writ_crawl_site` / `writ_crawl_status` | Start and poll a distributed site crawl | yes | yes |
-| `writ_crawl_files` | The original documents a crawl captured (PDFs, office files, images) | yes | no |
-| `writ_saved_crawls` / `writ_run_saved_crawl` / `writ_saved_crawl_data` | Saved crawls (see below) | yes | yes |
-| `writ_update_saved_crawl` | Inspect or change a saved crawl's settings | yes | no |
-| `writ_personas` | See your saved sign-in identities and get them ready (see below) | yes | yes |
-| `writ_payment` | Pay with a card the user approves; Writ places the order once they confirm | yes | no |
-| `writ_devices` | Your linked Writ desktops: list them, or point this connection at one | yes | no |
-| `writ_create_automation` | Event or clock → run a workflow, notify, or wake an agent | yes | yes |
-| `writ_list_webhooks` | Your inbound webhook URLs and the automations they fire | yes | yes |
-| `writ_create_monitor` / `writ_wire_monitor` | Watch a page and react to changes | yes | yes |
-| `writ_browser_use` | Open a real browser your assistant drives turn by turn | yes | yes |
-| `writ_record_website` | Record a repeatable task as a workflow | yes | yes |
-| `writ_website_to_api` | Turn a website into a callable API | yes | yes |
-| `writ_discovery_status` | Follow an API build to its result | yes | no |
-| `writ_browser_act` / `_context` / `_network` / `_save` / `_cancel` | Act in the browser, read the page and its network calls, save or close the session | yes | yes |
-| `writ_browser_compose` | Define named functions, inputs and explicit steps in a session | yes | no |
-| `writ_browser_ask_user` | Hand a CAPTCHA, a code or a decision to the user in the live browser | yes | no |
-| `writ_browser_sessions` | Open browser sessions you can resume | yes | no |
-| `writ_record_start` / `_act` / `_context` / `_network` / `_save` / `_cancel` | Older names of the browser loop, kept for compatibility | no | yes |
+| Tool | What it does |
+|---|---|
+| `writ_website_to_api` | Turn a website into a callable API |
+| `writ_discovery_status` | Follow an API build to its result |
+| `writ_list_workflows` | Your saved APIs and workflows (a `run_<name>` tool is added only for workflows you pin) |
+| `writ_run_workflow` | Run one and wait for the extracted data |
+| `writ_pin_workflow_tool` | Pin or unpin a workflow as its own `run_<name>` tool (off by default, capped; everything still runs via `writ_run_workflow`) |
+| `writ_update_workflow` | Read a workflow's outline or edit it in place (settings, steps, functions, its agent skill) |
+| `writ_diagnose_http_workflow` | Show what every request of a run was answered with, and whether it ran without a browser |
+| `writ_create_http_extraction` | Author a multi-request browserless extraction from captured requests |
+| `writ_workflow_data` | Read a workflow's accumulated data table |
+| `writ_search_data` | Search across everything already collected |
+| `writ_export_data` | Export a workflow's data as CSV or JSON |
+| `writ_workflow_runs` | Run history and status |
+| `writ_set_schedule` | Schedule a workflow (interval, daily, weekly) |
+| `writ_expose_workflow_api` | Publish a workflow as a callable REST endpoint |
+| `writ_scrape` | Read a page, or several, as clean markdown, or a listing's top N |
+| `writ_crawl_site` / `writ_crawl_status` | Start and follow a site crawl |
+| `writ_crawl_files` | The original documents a crawl captured (PDFs, office files, images) |
+| `writ_saved_crawls` / `writ_run_saved_crawl` / `writ_saved_crawl_data` | Saved crawls (see below) |
+| `writ_update_saved_crawl` | Inspect or change a saved crawl's settings |
+| `writ_personas` | See your saved sign-in identities and get them ready (see below) |
+| `writ_payment` | Pay with a card the user approves; Writ places the order once they confirm |
+| `writ_devices` | Your linked Writ Desktops: list them, or point this connection at one |
+| `writ_create_automation` | Event or clock → run a workflow, notify, or wake an agent |
+| `writ_list_webhooks` | Your inbound webhook URLs and the automations they fire |
+| `writ_create_monitor` / `writ_wire_monitor` | Watch a page and react to changes |
+| `writ_browser_use` | Open a real browser your assistant drives turn by turn |
+| `writ_record_website` | Record a repeatable task as a workflow |
+| `writ_browser_act` / `_context` / `_network` / `_save` / `_cancel` | Act in the browser, read the page and its network calls, save or close the session |
+| `writ_browser_compose` | Define named functions, inputs and explicit steps in a session |
+| `writ_browser_ask_user` | Hand a CAPTCHA, a code or a decision to the user in the live browser |
+| `writ_browser_sessions` | Open browser sessions you can resume |
+| `writ_help` | Any tool's full reference, or the complete guide |
 
-The build tools (`writ_browser_use`, `writ_record_website`, `writ_website_to_api`, then
-`writ_browser_act` / `_context` / `_network` / `_save` / `_cancel`) are on both targets;
-neither has a `writ_build` tool, so use `writ_record_website`. Your
-assistant opens a real browser, drives it turn by turn, and saves the session as
-a reusable workflow that afterwards replays with no model in the loop. Writ Cloud
-runs it on Writ's fleet; a self-hosted coordinator runs it on your own [fleet
-agent](https://github.com/usewrit/writ-agent). Either way your assistant is the
-brain — no second model key is involved.
+The build tools (`writ_website_to_api`, `writ_browser_use`, `writ_record_website`, then
+`writ_browser_act` / `_context` / `_network` / `_save` / `_cancel`) let your assistant open a real
+browser, drive it turn by turn, and save the result as a reusable API that afterwards runs with no
+model in the loop. It runs on Writ's servers, or on your own computer through a linked Writ Desktop.
+Either way your assistant is the brain: no second model key is involved.
 
 ### Reusing a recent result (`max_age`)
 
@@ -194,8 +182,8 @@ session costs two full runs and two waits. Every workflow tool takes an optional
 A reused answer carries `_cache: {hit: true, age_seconds: N}` so the assistant can
 tell how current it is.
 
-`max_age` works identically against Writ Cloud and a self-hosted coordinator, and on
-a pinned workflow's own `run_<name>` tool as well as `writ_run_workflow`.
+`max_age` works on a pinned workflow's own `run_<name>` tool as well as on
+`writ_run_workflow`.
 
 ### Calling a saved crawl (`writ_run_saved_crawl`)
 
@@ -240,7 +228,7 @@ on Writ Cloud — and the task runs signed in, with 2FA codes minted server-side
 By design the connector can only **use** personas, never manage them: creating,
 editing or deleting one involves credentials, and no credential or one-time code
 ever crosses the MCP connection in either direction. Personas are created in the
-Writ dashboard.
+Writ app.
 
 ### If a tool call times out
 
@@ -254,16 +242,11 @@ Flags take precedence over environment variables.
 
 | Flag | Env | Default | Purpose |
 |------|-----|---------|---------|
-| `--url` | `WRIT_COORDINATOR_URL` / `WRIT_URL` | `https://api.usewrit.app` | Target base URL. A URL whose path is already `/mcp` or `/mcp/<slug>` is used verbatim. |
+| `--url` | `WRIT_COORDINATOR_URL` / `WRIT_URL` | `https://api.usewrit.app` | Target base URL: Writ Cloud by default. A URL whose path is already `/mcp` or `/mcp/<slug>` is used verbatim. (The env name is historical.) |
 | `--api-key` | `WRIT_API_KEY` | — (**required**) | Key for `Authorization: Bearer`. Prefer the env var. |
-| `--insecure` | `WRIT_INSECURE_TLS=1` | off | Accept a self-signed local-CA cert. Private networks only. |
+| `--insecure` | `WRIT_INSECURE_TLS=1` | off | Accept a self-signed certificate. Local testing only. |
 | `--timeout` | `WRIT_MCP_TIMEOUT_MS` | `600000` | Per-request timeout (ms); covers long `writ_run_workflow` waits. |
 | `--help` / `--version` | — | — | Print usage or version and exit. |
-
-> **HTTPS with a local CA (self-host):** trust the CA (recommended) and use the
-> `https://` address, or set `NODE_EXTRA_CA_CERTS=/path/to/ca.pem`. Use
-> `--insecure` only for localhost testing — it disables certificate verification
-> entirely, which exposes your key to a man-in-the-middle.
 
 ## Security
 
@@ -308,11 +291,11 @@ npm audit signatures
 
 | Symptom | Cause and fix |
 |---|---|
-| `Unauthorized: … rejected the API key` | The key is wrong, disabled, or lacks scope. Recreate it under **Settings → Developers** with `workflows:read` / `workflows:execute`. |
-| `Cannot reach …` | Wrong `--url`, or the target is down. For a self-signed cert see the local-CA note above. |
-| `… redirected (HTTP 301)` | Your reverse proxy redirects (usually `http` → `https`). Point `--url` at the final URL. |
+| `Unauthorized: … rejected the API key` | The key is wrong, disabled, or lacks scope. Recreate it under **Developers → API Keys** with `workflows:read` / `workflows:execute`. |
+| `Cannot reach …` | Wrong `--url`, or the network blocks the connection. Leave `--url` out to use Writ Cloud. |
+| `… redirected (HTTP 301)` | The URL redirects (usually `http` → `https`). Point `--url` at the final URL. |
 | `The API key contains characters that cannot be sent in an HTTP header` | A newline or control character got into the key — usually a copy-paste artifact. Re-copy it. |
-| **No tools listed** | The connector could not reach the coordinator, or the key was rejected — see the rows above. With a working connection the static `writ_*` tools are always listed, even before you save a workflow. |
+| **No tools listed** | The connector could not reach Writ, or the key was rejected — see the rows above. With a working connection the static `writ_*` tools are always listed, even before you save a workflow. |
 | **A workflow has no `run_<name>` tool** | Derived tools are opt-in and off by default. Pin the workflow with `writ_pin_workflow_tool` (or the app's **Expose as MCP tool** switch) and it appears on the next `tools/list`, up to 20 per account. Every workflow runs through `writ_run_workflow` either way. |
 | **Client won't connect, no error** | Read the connector's stderr — your client logs it. Claude Code: `~/Library/Caches/claude-cli-nodejs/<project>/mcp-logs-<name>/`. |
 
@@ -320,9 +303,8 @@ npm audit signatures
 
 | | |
 |---|---|
-| **Self-hosted coordinator** | Supported and verified end to end. |
-| **Published `/mcp/<slug>` endpoints** | Supported. |
-| **Writ Cloud** (`https://api.usewrit.app`, the no-`--url` default) | Supported. Used automatically when no `--url` is passed. |
+| **Writ Cloud** (`https://api.usewrit.app`, the no-`--url` default) | Supported. |
+| **Per-workflow MCP servers** (`https://mcp.usewrit.app/mcp/<org>/<slug>`) | Supported. |
 
 ## Development
 
@@ -342,14 +324,16 @@ dependencies, permanently**, and **no tool logic here**.
 
 | | |
 |---|---|
-| [**usewrit/writ**](https://github.com/usewrit/writ) | The self-host coordinator — web UI, API, your data. Start here. |
-| [**usewrit/writ-agent**](https://github.com/usewrit/writ-agent) | The Rust fleet worker that does the actual browsing. |
-| **writ-mcp** (this repo) | The MCP connector. |
+| [**usewrit.app**](https://usewrit.app) | Writ Cloud: build, run and schedule your website APIs. Start here. |
+| [**usewrit/writ-plugins**](https://github.com/usewrit/writ-plugins) | The Writ plugin for Claude, Codex, Cursor, Gemini CLI and GitHub Copilot: the MCP server over OAuth, plus skills. |
+| [**usewrit/writ-sdks**](https://github.com/usewrit/writ-sdks) | Client SDKs for TypeScript, Python, Go and Rust. |
+| [**usewrit/writ-desktop**](https://github.com/usewrit/writ-desktop) | Writ Desktop downloads and issue tracker. |
+| [**usewrit/writ-agent**](https://github.com/usewrit/writ-agent) | Connect a computer or server you control to your Writ account. |
+| **writ-mcp** (this repo) | The MCP bridge. |
 
 ## License
 
 **MIT** — see [`LICENSE`](./LICENSE).
 
 This package is deliberately permissive because it runs *inside your MCP client*,
-not inside the coordinator, so it has to be embeddable anywhere. The coordinator
-it talks to is **AGPL-3.0-only**; the two licenses are not interchangeable.
+so it has to be embeddable anywhere.
