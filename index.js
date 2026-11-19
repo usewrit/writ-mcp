@@ -2,8 +2,8 @@
 /*
  * writ-mcp — the official Writ MCP server connector.
  *
- * A thin stdio <-> HTTP bridge that works against BOTH Writ Cloud and a
- * self-hosted Writ coordinator. MCP clients that speak stdio (Claude Code,
+ * A thin stdio <-> HTTP bridge to the Writ Cloud MCP server
+ * (https://usewrit.app). MCP clients that speak stdio (Claude Code,
  * Claude Desktop, Cursor, Windsurf, Codex, …) launch this process and exchange
  * newline-delimited JSON-RPC 2.0 over stdin/stdout. We forward each message
  * verbatim to the target's Streamable-HTTP MCP endpoint with an
@@ -16,8 +16,6 @@
  * instead of the process table.
  *   Writ Cloud (default — no --url needed):
  *     claude mcp add writ-cloud -e WRIT_API_KEY=wt_... -- npx -y writ-mcp
- *   Self-hosted coordinator:
- *     claude mcp add writ-selfhost -e WRIT_API_KEY=wt_... -- npx -y writ-mcp --url https://writ.example.com
  *   A published per-workflow MCP endpoint (an "Expose as MCP" slug URL) is used
  *   verbatim:
  *     claude mcp add my-tools -e WRIT_API_KEY=wt_... -- npx -y writ-mcp --url https://mcp.usewrit.app/mcp/my-tools
@@ -25,7 +23,7 @@
  * Config (flags take precedence over env):
  *   --url <URL>        WRIT_COORDINATOR_URL | WRIT_URL   (default: Writ Cloud)
  *   --api-key <KEY>    WRIT_API_KEY  (prefer the env var — see below)
- *   --insecure         WRIT_INSECURE_TLS=1   (accept a self-signed local-CA cert)
+ *   --insecure         WRIT_INSECURE_TLS=1   (accept a self-signed cert; local testing only)
  *   --timeout <ms>     WRIT_MCP_TIMEOUT_MS   (per-request; default 600000)
  *
  * Prefer WRIT_API_KEY over --api-key: a key on the command line is readable by
@@ -95,19 +93,18 @@ function parseArgs(argv) {
 const args = parseArgs(process.argv.slice(2));
 
 const HELP =
-  'writ-mcp — the official Writ MCP server connector (Writ Cloud + self-host)\n\n' +
+  'writ-mcp — the official Writ MCP bridge to Writ Cloud (https://usewrit.app)\n\n' +
   // --api-key is bracketed, not required: the key normally arrives as
   // WRIT_API_KEY, and exactly one of the two has to be present.
   'Usage: writ-mcp [--url <url>] [--api-key <key>] [--insecure] [--timeout <ms>]\n\n' +
   'Without --url it targets Writ Cloud (' + CLOUD_BASE + '). Pass --url for a\n' +
-  'self-hosted coordinator, or a published /mcp/<slug> endpoint URL to use it\n' +
-  'verbatim.\n\n' +
+  'published /mcp/<slug> endpoint URL to use it verbatim.\n\n' +
   'Env:  WRIT_COORDINATOR_URL | WRIT_URL, WRIT_API_KEY, WRIT_INSECURE_TLS, WRIT_MCP_TIMEOUT_MS\n' +
   'The key also accepts --api-key, but prefer WRIT_API_KEY: a key on the command\n' +
   'line is visible in `ps` and recorded in your shell history.\n\n' +
   'Add to Claude Code (-e sets the env var, and must precede the --):\n' +
-  '  claude mcp add writ-cloud    -e WRIT_API_KEY=<YOUR_KEY> -- npx -y writ-mcp\n' +
-  '  claude mcp add writ-selfhost -e WRIT_API_KEY=<YOUR_KEY> -- npx -y writ-mcp --url https://writ.example.com\n';
+  '  claude mcp add writ-cloud -e WRIT_API_KEY=<YOUR_KEY> -- npx -y writ-mcp\n\n' +
+  'Create a key at https://usewrit.app (Developers → API Keys).\n';
 
 // --help / --version are explicit queries that exit immediately, so stdout is
 // not yet the JSON-RPC channel and is the right place for the answer.
@@ -233,7 +230,7 @@ const TARGET =
     ? 'Writ Cloud'
     : ENDPOINT.pathname.startsWith('/mcp/')
       ? 'published MCP endpoint'
-      : 'self-hosted coordinator';
+      : 'Writ server';
 
 // ── Credential-exposure warnings ─────────────────────────────────────────────
 // Every one of these is a way the Bearer key leaks. Say so loudly at startup —

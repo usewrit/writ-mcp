@@ -5,6 +5,16 @@ All notable changes to `writ-mcp` are documented here. This project follows
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-11-19
+
+### Changed
+- **The README describes Writ Cloud.** It connects to `https://api.usewrit.app` with a `wt_` API
+  key (or points remote-MCP clients at OAuth), carries the new Writ cover, and links to
+  [usewrit.app](https://usewrit.app). The package homepage is
+  [usewrit.app/docs/mcp](https://usewrit.app/docs/mcp/).
+- **`--help` names Writ Cloud only** and says where to create a key. No bridging
+  behaviour changed.
+
 ## [1.2.0] - 2026-10-10
 
 ### Added
